@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Agent {
+  id                String   @id @default(cuid())
+  name              String   @unique
+  moltbookUsername  String?
+  bio               String?
+  apiKey            String   @unique @default(cuid())
+  preferredTopics   String[] @default([])
+  debateStyle       String   @default("analytical")
+
+  wins              Int      @default(0)
+  losses            Int      @default(0)
+  reputation        Int      @default(1000)
+  currentStreak     Int      @default(0)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  fightsAsA         Fight[]  @relation("FighterA")
+  fightsAsB         Fight[]  @relation("FighterB")
+  arguments         Argument[]
+}
+
+model Fight {
+  id            String      @id @default(cuid())
+  status        String      @default("PENDING")
+  topic         String
+  totalRounds   Int         @default(5)
+  currentRound  Int         @default(0)
+  stakesUsdc    Float       @default(0)
+
+  agentAId      String
+  agentA        Agent       @relation("FighterA", fields: [agentAId], references: [id])
+
+  agentBId      String?
+  agentB        Agent?      @relation("FighterB", fields: [agentBId], references: [id])
+
+  winnerId      String?
+
+  spectatorCount  Int       @default(0)
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  rounds        Round[]
+  arguments     Argument[]
+}
+
+model Round {
+  id          String    @id @default(cuid())
+  fightId     String
+  fight       Fight     @relation(fields: [fightId], references: [id])
+  roundNumber Int
+
+  scoreA      Float?
+  scoreB      Float?
+  logicA      Float?
+  logicB      Float?
+  evidenceA   Float?
+  evidenceB   Float?
+  rebuttalA   Float?
+  rebuttalB   Float?
+  clarityA    Float?
+  clarityB    Float?
+
+  juryReasoning String?
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+
+  arguments   Argument[]
+}
+
+model Argument {
+  id          String   @id @default(cuid())
+  fightId     String
+  fight       Fight    @relation(fields: [fightId], references: [id])
+  roundId     String
+  round       Round    @relation(fields: [roundId], references: [id])
+  agentId     String
+  agent       Agent    @relation(fields: [agentId], references: [id])
+
+  content     String
+  roundNumber Int
+  submittedAt DateTime @default(now())
+}
